@@ -4,16 +4,20 @@
 import requests
 import pdb
 import logging
+import time
+import uuid
+import sys
 
-import orm
+import mysql.connector
 
-from configloader import configs
 from lxml import etree
-from model import Movie, next_id
 
 logging.basicConfig(level = logging.INFO)
 
 header = {'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36'}
+
+def next_id():
+    return '%015d%s000' % (int(time.time() * 1000), uuid.uuid4().hex)
 
 def get_movie_info(url, session):
     req = session.get(url, headers = header)
@@ -39,16 +43,36 @@ def get_movie_info(url, session):
 
                 logging.info('%s %s 《%s》（%s） %s %s' % (rank, rating_num, name.encode('gb2312','ignore').decode('gb2312'), alias_name, quote, url))
 
-                uid = next_id()
-                movie = Movie(id = uid, rank = rank, ranting = ranting, name = name, alias = alias, quote_tag = quote_tag, url = url)
-                movie.save()
+                movie_id = next_id()
+                movie_rank = rank.encode("utf8")
+                movie_ranting = rating_num.encode("utf8")
+                movie_name = name.encode("utf8")
+                movie_alias = alias_name.encode("utf8")
+                movie_quote_tag = quote.encode("utf8")
+                movie_url = url.encode("utf8")
 
+                cur = cnx.cursor()
+
+                add = ("INSERT INTO dbtop250 (id, rank, ranting, name, alias, quote_tag, url) VALUES (%s, %s, %s, %s, %s, %s, %s)")
+                data = (movie_id, movie_rank, movie_ranting, movie_name, movie_alias, movie_quote_tag, movie_url)
+                cur.execute(add, data)
+
+                cnx.commit()
+                cur.close()
         except:
-            print('faild!')
+            print("Unexpected error:", sys.exc_info()[0])
             pass
 
 
-orm.create_pool(**configs.database)
+config = {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "user": "gpf",
+    "password": "abcd",
+    "db": "pythondb",
+}
+
+cnx = mysql.connector.connect(**config)
 
 session = requests.Session()
 for id in range(0, 251, 25):
@@ -57,5 +81,5 @@ for id in range(0, 251, 25):
 
     get_movie_info(url, session)
 
-
+cnx.close()
 

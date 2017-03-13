@@ -8,8 +8,8 @@ use pythondb;
 grant select, insert, update, delete on pythondb.* to 'gpf'@'localhost' identified by 'abcd';
 
 create table dbtop250 (
-    `id` VARCHAR(50) not null primary key,
-    `rank` INT not null,
+    `id` VARCHAR(100) not null primary key,
+    `rank` VARCHAR(50) not null,
     `ranting` VARCHAR(50),
     `name` VARCHAR(50) not null,
     `alias` VARCHAR(50),
